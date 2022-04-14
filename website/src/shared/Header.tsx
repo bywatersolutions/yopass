@@ -14,18 +14,18 @@ export const Header = () => {
       <Toolbar>
         <Link href={home} color="inherit" underline="none">
           <Typography variant="h6" component="div">
-            Yopass
+            SharePass
             <Box
               sx={{
                 verticalAlign: 'middle',
                 paddingLeft: '5px',
-                width: '40px',
-                height: '40px',
+                width: '300px',
+                height: '88px',
               }}
               component="img"
-              height="40"
+              height="88"
               alt=""
-              src="yopass.svg"
+              src="https://d128kuqazpbsps.cloudfront.net/images/bywater-solutions-logo.png"
             />
           </Typography>
         </Link>

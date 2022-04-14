@@ -26,30 +26,6 @@ export const Features = () => {
           </Typography>
         </Box>
       </Grid>
-      <Feature title={t('features.featureEndToEndTitle')} icon={faLock}>
-        {t('features.featureEndToEndText')}
-      </Feature>
-      <Feature title={t('features.featureSelfDestructionTitle')} icon={faBomb}>
-        {t('features.featureSelfDestructionText')}
-      </Feature>
-      <Feature title={t('features.featureOneTimeTitle')} icon={faDownload}>
-        {t('features.featureOneTimeText')}
-      </Feature>
-      <Feature
-        title={t('features.featureSimpleSharingTitle')}
-        icon={faShareAlt}
-      >
-        {t('features.featureSimpleSharingText')}
-      </Feature>
-      <Feature
-        title={t('features.featureNoAccountsTitle')}
-        icon={faUserAltSlash}
-      >
-        {t('features.featureNoAccountsText')}
-      </Feature>
-      <Feature title={t('features.featureOpenSourceTitle')} icon={faCodeBranch}>
-        {t('features.featureOpenSourceText')}
-      </Feature>
     </Grid>
   );
 };
