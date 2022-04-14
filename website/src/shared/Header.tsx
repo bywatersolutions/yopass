@@ -25,7 +25,7 @@ export const Header = () => {
               component="img"
               height="88"
               alt=""
-              src="https://d128kuqazpbsps.cloudfront.net/images/bywater-solutions-logo.png"
+              src="bywater-solutions-logo.png"
             />
           </Typography>
         </Link>
