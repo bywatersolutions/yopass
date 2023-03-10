@@ -52,7 +52,7 @@ export const Expiration = (props: { control: UseFormMethods['control'] }) => {
             />
             <FormControlLabel
               labelPlacement="end"
-              value="86400"
+              value="1209600"
               control={<Radio color="primary" />}
               label={t('expiration.optionOneDayLabel') as string}
             />
