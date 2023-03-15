@@ -168,7 +168,7 @@ export const OneTime = (props: { register: UseFormMethods['register'] }) => {
             id="enable-onetime"
             name="onetime"
             inputRef={props.register()}
-            defaultChecked={true}
+            defaultChecked={false}
             color="primary"
           />
         }
