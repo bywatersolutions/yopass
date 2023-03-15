@@ -16,7 +16,7 @@ export const Expiration = (props: { control: UseFormMethods['control'] }) => {
       <Controller
         rules={{ required: true }}
         control={props.control}
-        defaultValue="3600"
+        defaultValue="1209600"
         name="expiration"
         as={
           <RadioGroup
@@ -46,6 +46,12 @@ export const Expiration = (props: { control: UseFormMethods['control'] }) => {
               value="604800"
               control={<Radio color="primary" />}
               label={t('expiration.optionOneWeekLabel') as string}
+            />
+            <FormControlLabel
+              labelPlacement="end"
+              value="1209600"
+              control={<Radio color="primary" />}
+              label={t('expiration.optionTwoWeekLabel') as string}
             />
           </RadioGroup>
         }
