@@ -167,7 +167,7 @@ export const OneTime = (props: { control: Control<any> }) => {
               <Checkbox
                 {...field}
                 id="enable-onetime"
-                defaultChecked={true}
+                defaultChecked={false}
                 color="primary"
               />
             )}
