@@ -1,7 +1,6 @@
 import { Controller, UseFormMethods } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import {
-  Grid,
   FormControl,
   FormControlLabel,
   FormLabel,
@@ -14,18 +13,10 @@ export const Expiration = (props: { control: UseFormMethods['control'] }) => {
   return (
     <FormControl component="fieldset" margin="dense">
       <FormLabel component="legend">{t('expiration.legend')}</FormLabel>
-<Grid
-  container
-  spacing={0}
-  direction="column"
-  alignItems="center"
-  justifyContent="center"
->
-  <Grid item xs={3}>
       <Controller
         rules={{ required: true }}
         control={props.control}
-        defaultValue="604800"
+        defaultValue="3600"
         name="expiration"
         as={
           <RadioGroup
@@ -40,9 +31,9 @@ export const Expiration = (props: { control: UseFormMethods['control'] }) => {
           >
             <FormControlLabel
               labelPlacement="end"
-              value="604800"
+              value="3600"
               control={<Radio color="primary" />}
-              label={t('expiration.optionOneWeekLabel') as string}
+              label={t('expiration.optionOneHourLabel') as string}
             />
             <FormControlLabel
               labelPlacement="end"
@@ -50,11 +41,15 @@ export const Expiration = (props: { control: UseFormMethods['control'] }) => {
               control={<Radio color="primary" />}
               label={t('expiration.optionOneDayLabel') as string}
             />
+            <FormControlLabel
+              labelPlacement="end"
+              value="604800"
+              control={<Radio color="primary" />}
+              label={t('expiration.optionOneWeekLabel') as string}
+            />
           </RadioGroup>
         }
       />
-  </Grid>
-</Grid>
     </FormControl>
   );
 };
