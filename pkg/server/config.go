@@ -101,5 +101,25 @@ func (y *Server) configHandler(w http.ResponseWriter, r *http.Request) {
 		config["THEME_DARK"] = DefaultThemeDark
 	}
 
+	// Branding without a license key (ByWater fork): expose the BRAND_*
+	// settings through the config keys the website already renders, so they
+	// work with or without a license and take precedence when both are set.
+	if y.BrandTitle != "" {
+		config["APP_NAME"] = y.BrandTitle
+	}
+	if y.BrandLogo != "" {
+		config["LOGO_URL"] = y.BrandLogo
+	}
+	if y.BrandColor != "" {
+		for _, key := range []string{"THEME_CUSTOM_LIGHT", "THEME_CUSTOM_DARK"} {
+			vars, _ := config[key].(map[string]string)
+			if vars == nil {
+				vars = map[string]string{}
+			}
+			vars["--color-primary"] = y.BrandColor
+			config[key] = vars
+		}
+	}
+
 	y.writeJSON(w, http.StatusOK, config)
 }
