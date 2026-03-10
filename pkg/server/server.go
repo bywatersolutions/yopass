@@ -77,6 +77,13 @@ type Server struct {
 	ThemeCustomLight string
 	ThemeCustomDark  string
 
+	// Branding without a license key (ByWater fork). These feed the same
+	// APP_NAME, LOGO_URL and custom theme config keys the website already
+	// reads for licensed branding, so the frontend needs no changes.
+	BrandTitle string
+	BrandColor string
+	BrandLogo  string
+
 	// DefaultExpiry is the default secret lifetime.
 	DefaultExpiry string
 
@@ -196,6 +203,12 @@ func (y *Server) HTTPHandler() http.Handler {
 	if y.LogoURL != "" {
 		if u, err := url.Parse(y.LogoURL); err == nil && u.IsAbs() && u.Host != "" {
 			extraImgSrc = []string{u.Scheme + "://" + u.Host}
+		}
+	}
+	// The unlicensed brand logo may be external too (ByWater fork)
+	if y.BrandLogo != "" {
+		if u, err := url.Parse(y.BrandLogo); err == nil && u.IsAbs() && u.Host != "" {
+			extraImgSrc = append(extraImgSrc, u.Scheme+"://"+u.Host)
 		}
 	}
 	return handlers.CustomLoggingHandler(nil, SecurityHeadersHandler(extraImgSrc, y.Argon2, mx), y.httpLogFormatter(mx))
