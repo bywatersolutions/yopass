@@ -8,13 +8,17 @@ services:
       - "11211"
 
   yopass:
-    image: jhaals/yopass
+    image: yopass
     restart: always
     ports:
-      - "127.0.0.1:80:80"
+      - "127.0.0.1:3000:3000"
     environment:
       - MEMCACHED=memcached:11211
-      - PORT=80
+      - PORT=3000
+      - BRAND_TITLE=Sharepass - ByWater Solutions
+      - BRAND_COLOR=#87c0e9
+      - BRAND_LOGO=https://scontent-iad3-2.xx.fbcdn.net/v/t39.30808-6/528267706_1333495355443820_8816511351264250499_n.jpg?_nc_cat=105&ccb=1-7&_nc_sid=1d70fc&_nc_ohc=KD0PSZbxaKYQ7kNvwFuaGWF&_nc_oc=AdrpEOS2Ph8Z4WE_u5RAEGMULxA7ifXwjGvp34sN4nZUnYVVj0ToSMKqf1DBjLhcmlI&_nc_zt=23&_nc_ht=scontent-iad3-2.xx&_nc_gid=MiSccR8p58OfLDHlCnMjxA&_nc_ss=7a30f&oh=00_AfyXZO3UvwilUFkntaGXmbUMsOIeGLuBTUSuuuFTfbjB9Q&oe=69C2F463
+      - DEFAULT_EXPIRY=1w
     healthcheck:
       test: ["CMD", "/yopass-server", "--health-check"]
       interval: 30s
