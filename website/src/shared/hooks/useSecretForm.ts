@@ -23,7 +23,7 @@ export interface SecretFormState {
 }
 
 export function useSecretForm(): SecretFormState {
-  const [oneTime, setOneTime] = useState(true);
+  const [oneTime, setOneTime] = useState(false);
   const [generateKey, setGenerateKey] = useState(true);
   const [customPassword, setCustomPassword] = useState('');
   const [result, setResult] = useState({
