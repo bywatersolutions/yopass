@@ -1,0 +1,49 @@
+# diun: posts to Slack when a watched image has a newer version in its registry.
+# Deploy from a manager node of the prod-bwsdocker01 swarm:
+#
+#   # once: the #devops incoming webhook as a docker secret (stays out of git)
+#   printf '%s' 'https://hooks.slack.com/services/T.../B.../xxx' | docker secret create slack_devops_webhook -
+#   docker stack deploy -c deploy/docker-swarm/diun-stack.yml diun
+#
+# Opt-in: only services labelled diun.enable=true are watched. Set
+# DIUN_PROVIDERS_SWARM_WATCHBYDEFAULT=true to watch every service instead
+# (mind Docker Hub's anonymous pull-rate limit).
+version: "3.8"
+
+services:
+  diun:
+    image: crazymax/diun:4.33
+    command: serve
+    environment:
+      - TZ=America/New_York
+      - LOG_LEVEL=info
+      - DIUN_WATCH_WORKERS=10
+      - DIUN_WATCH_SCHEDULE=0 * * * *
+      - DIUN_WATCH_JITTER=30s
+      - DIUN_WATCH_FIRSTCHECKNOTIF=false
+      - DIUN_PROVIDERS_SWARM=true
+      - DIUN_PROVIDERS_SWARM_WATCHBYDEFAULT=false
+      - DIUN_NOTIF_SLACK_WEBHOOKURLFILE=/run/secrets/slack_devops_webhook
+      - DIUN_NOTIF_SLACK_RENDERFIELDS=true
+      - 'DIUN_NOTIF_SLACK_TEMPLATEBODY=prod-bwsdocker01: {{ .Entry.Image }} {{ if eq .Entry.Status "new" }}now watched{{ else }}updated in registry{{ end }}'
+    volumes:
+      - diun-data:/data
+      - /var/run/docker.sock:/var/run/docker.sock
+    secrets:
+      - slack_devops_webhook
+    deploy:
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+      labels:
+        shepherd.enable: "false"
+        shepherd.autodeploy: "false"
+        diun.enable: "true"
+
+secrets:
+  slack_devops_webhook:
+    external: true
+
+volumes:
+  diun-data: {}
