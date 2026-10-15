@@ -17,7 +17,7 @@ services:
       - PORT=3000
       - BRAND_TITLE=Sharepass - ByWater Solutions
       - BRAND_COLOR=#87c0e9
-      - BRAND_LOGO=https://scontent-iad3-2.xx.fbcdn.net/v/t39.30808-6/528267706_1333495355443820_8816511351264250499_n.jpg?_nc_cat=105&ccb=1-7&_nc_sid=1d70fc&_nc_ohc=KD0PSZbxaKYQ7kNvwFuaGWF&_nc_oc=AdrpEOS2Ph8Z4WE_u5RAEGMULxA7ifXwjGvp34sN4nZUnYVVj0ToSMKqf1DBjLhcmlI&_nc_zt=23&_nc_ht=scontent-iad3-2.xx&_nc_gid=MiSccR8p58OfLDHlCnMjxA&_nc_ss=7a30f&oh=00_AfyXZO3UvwilUFkntaGXmbUMsOIeGLuBTUSuuuFTfbjB9Q&oe=69C2F463
+      - BRAND_LOGO=https://ik.imagekit.io/bywatersolutions/icon_only_transparent.png
       - DEFAULT_EXPIRY=1w
     healthcheck:
       test: ["CMD", "/yopass-server", "--health-check"]
