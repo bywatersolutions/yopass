@@ -38,6 +38,30 @@ func TestConfigHandler_UnlicensedBrand(t *testing.T) {
 	}
 }
 
+func TestConfigHandler_UnlicensedBrandTheme(t *testing.T) {
+	s := newTestServer(t, newMockDB(), 1, false)
+	s.License = LicenseStatus{}
+	s.BrandColor = "#1b4c81"
+	s.BrandThemeLight = `{"--color-base-200":"#f3f3f3","--color-accent":"#46d2a8"}`
+	s.BrandThemeDark = `{"--color-primary":"#63b7e6","--color-base-100":"#1e324d"}`
+
+	w := httptest.NewRecorder()
+	s.configHandler(w, httptest.NewRequest(http.MethodGet, "/config", nil))
+
+	var cfg map[string]interface{}
+	if err := json.NewDecoder(w.Result().Body).Decode(&cfg); err != nil {
+		t.Fatal(err)
+	}
+	light, _ := cfg["THEME_CUSTOM_LIGHT"].(map[string]interface{})
+	if light["--color-primary"] != "#1b4c81" || light["--color-base-200"] != "#f3f3f3" || light["--color-accent"] != "#46d2a8" {
+		t.Errorf("THEME_CUSTOM_LIGHT should merge BRAND_COLOR with the JSON vars, got %v", light)
+	}
+	dark, _ := cfg["THEME_CUSTOM_DARK"].(map[string]interface{})
+	if dark["--color-primary"] != "#63b7e6" || dark["--color-base-100"] != "#1e324d" {
+		t.Errorf("THEME_CUSTOM_DARK JSON should override BRAND_COLOR, got %v", dark)
+	}
+}
+
 func TestSecurityHeadersBrandLogoOrigin(t *testing.T) {
 	y := newTestServer(t, newMockDB(), 1, false)
 	y.BrandLogo = "https://cdn.example.com/logo.png"

@@ -109,14 +109,29 @@ func (y *Server) configHandler(w http.ResponseWriter, r *http.Request) {
 	if y.BrandLogo != "" {
 		config["LOGO_URL"] = y.BrandLogo
 	}
-	if y.BrandColor != "" {
-		for _, key := range []string{"THEME_CUSTOM_LIGHT", "THEME_CUSTOM_DARK"} {
-			vars, _ := config[key].(map[string]string)
-			if vars == nil {
-				vars = map[string]string{}
-			}
+	for _, theme := range []struct{ key, vars string }{
+		{"THEME_CUSTOM_LIGHT", y.BrandThemeLight},
+		{"THEME_CUSTOM_DARK", y.BrandThemeDark},
+	} {
+		vars, _ := config[theme.key].(map[string]string)
+		if vars == nil {
+			vars = map[string]string{}
+		}
+		// BRAND_COLOR is the simple form; a per-theme JSON can refine it,
+		// e.g. a lighter primary for the dark theme
+		if y.BrandColor != "" {
 			vars["--color-primary"] = y.BrandColor
-			config[key] = vars
+		}
+		if theme.vars != "" {
+			var brandVars map[string]string
+			if err := json.Unmarshal([]byte(theme.vars), &brandVars); err == nil {
+				for k, v := range brandVars {
+					vars[k] = v
+				}
+			}
+		}
+		if len(vars) > 0 {
+			config[theme.key] = vars
 		}
 	}
 

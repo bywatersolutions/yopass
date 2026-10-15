@@ -74,7 +74,7 @@ func validateFlags(license server.LicenseStatus, logger *zap.Logger) error {
 		}
 	}
 
-	for _, flagName := range []string{"theme-custom-light", "theme-custom-dark"} {
+	for _, flagName := range []string{"theme-custom-light", "theme-custom-dark", "brand-theme-light", "brand-theme-dark"} {
 		raw := viper.GetString(flagName)
 		if raw == "" {
 			continue
