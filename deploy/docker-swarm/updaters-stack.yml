@@ -1,0 +1,100 @@
+# Automatic updates (shepherd) and update alerts (diun) for the Swarm on
+# prod-bwsdocker01. Deploy from a manager node:
+#
+#   # once: the #devops incoming webhook for diun, as a docker secret (stays out of git)
+#   printf '%s' 'https://hooks.slack.com/services/T.../B.../xxx' | docker secret create slack_devops_webhook -
+#   # the same webhook in Apprise form for shepherd: https://hooks.slack.com/services/A/B/C -> slack://A/B/C
+#   export APPRISE_SLACK_URL='slack://T.../B.../xxx'
+#   docker stack deploy -c deploy/docker-swarm/updaters-stack.yml updaters
+#
+# shepherd only touches services labelled shepherd.enable=true (opt-in) and
+# re-pulls whatever tag the service already uses (:latest for yopass). diun
+# watches services labelled diun.enable=true and posts to Slack when the tag's
+# digest changes in the registry. Set DIUN_PROVIDERS_SWARM_WATCHBYDEFAULT=true
+# to watch every service instead (mind Docker Hub's anonymous pull-rate limit).
+version: "3.8"
+
+services:
+  shepherd:
+    image: containrrr/shepherd:v1.8.1
+    environment:
+      - TZ=America/New_York
+      - SLEEP_TIME=15m
+      - FILTER_SERVICES=label=shepherd.enable=true
+      - UPDATE_OPTIONS=--update-order=start-first --update-failure-action=rollback
+      # shepherd treats these as presence checks: remove them to turn them off,
+      # never set them to "false".
+      - ROLLBACK_ON_FAILURE=true
+      - IMAGE_AUTOCLEAN_LIMIT=3
+      - APPRISE_SIDECAR_URL=http://apprise:8000/notify
+      - VERBOSE=true
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - updaters
+    deploy:
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+      labels:
+        shepherd.enable: "false"
+        diun.enable: "true"
+
+  # Turns shepherd's "updated service X" / "update failed" calls into Slack posts.
+  apprise:
+    image: caronc/apprise:2.0
+    environment:
+      - APPRISE_STATELESS_URLS=${APPRISE_SLACK_URL:?APPRISE_SLACK_URL is required}
+    networks:
+      - updaters
+    deploy:
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+      labels:
+        shepherd.enable: "false"
+        diun.enable: "true"
+
+  diun:
+    image: crazymax/diun:4.33
+    command: serve
+    environment:
+      - TZ=America/New_York
+      - LOG_LEVEL=info
+      - DIUN_WATCH_WORKERS=10
+      - DIUN_WATCH_SCHEDULE=0 * * * *
+      - DIUN_WATCH_JITTER=30s
+      - DIUN_WATCH_FIRSTCHECKNOTIF=false
+      - DIUN_PROVIDERS_SWARM=true
+      - DIUN_PROVIDERS_SWARM_WATCHBYDEFAULT=false
+      - DIUN_NOTIF_SLACK_WEBHOOKURLFILE=/run/secrets/slack_devops_webhook
+      - DIUN_NOTIF_SLACK_RENDERFIELDS=true
+      - 'DIUN_NOTIF_SLACK_TEMPLATEBODY=prod-bwsdocker01: {{ .Entry.Image }} {{ if eq .Entry.Status "new" }}now watched{{ else }}updated in registry{{ end }}'
+    volumes:
+      - diun-data:/data
+      - /var/run/docker.sock:/var/run/docker.sock
+    secrets:
+      - slack_devops_webhook
+    networks:
+      - updaters
+    deploy:
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+      labels:
+        shepherd.enable: "false"
+        diun.enable: "true"
+
+secrets:
+  slack_devops_webhook:
+    external: true
+
+volumes:
+  diun-data: {}
+
+networks:
+  updaters:
+    driver: overlay

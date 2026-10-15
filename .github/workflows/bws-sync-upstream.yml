@@ -1,0 +1,80 @@
+name: BWS - Sync upstream release
+
+# Daily: if jhaals/yopass published a release newer than the upstream tag our
+# master is based on, replay our customization commits onto the new tag, push
+# the result as branch <version> and move master to it (force-with-lease), which
+# makes bws-build.yml publish :<version> and :latest. On a cherry-pick conflict:
+# push nothing, alert #devops and open a GitHub issue.
+# Scheduled workflows only run from the default branch, so this must be on master.
+# All logic: .github/scripts/bws-sync-upstream.sh
+#
+# yamllint disable-line rule:truthy
+on:
+  schedule:
+    - cron: "17 13 * * *"
+  workflow_dispatch:
+    inputs:
+      target_tag:
+        description: "Upstream tag to sync to (default: latest published release of jhaals/yopass)"
+        type: string
+        default: ""
+      force:
+        description: "Sync even if the target is not newer than the current base version"
+        type: boolean
+        default: false
+      dry_run:
+        description: "Replay but push nothing; Slack message and issue get a [DRY RUN] prefix"
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+  issues: write
+  actions: write
+
+concurrency:
+  group: bws-sync-upstream
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    name: Check upstream and replay customizations
+    runs-on: ubuntu-latest
+    steps:
+      # GHA_WORKFLOW_TOKEN (a PAT), not GITHUB_TOKEN: pushes made with GITHUB_TOKEN
+      # do not trigger bws-build.yml, and pushing commits that touch
+      # .github/workflows needs the PAT's `workflow` scope.
+      - name: Check out
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GHA_WORKFLOW_TOKEN }}
+
+      - name: Preflight the push token
+        env:
+          GH_TOKEN: ${{ secrets.GHA_WORKFLOW_TOKEN }}
+        run: bash .github/scripts/bws-preflight-token.sh
+
+      - name: Sync
+        id: sync
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TARGET_TAG: ${{ inputs.target_tag }}
+          FORCE: ${{ inputs.force }}
+          DRY_RUN: ${{ inputs.dry_run }}
+        run: bash .github/scripts/bws-sync-upstream.sh
+
+      - name: Keep upstream-only workflows disabled
+        if: always()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: bash .github/scripts/bws-disable-upstream-workflows.sh
+
+      - name: Notify devops
+        if: always() && steps.sync.outputs.outcome != 'noop'
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_DEVOPS_WEBHOOK }}
+          SLACK_COLOR: ${{ steps.sync.outputs.slack_color }}
+          SLACK_TITLE: ${{ steps.sync.outputs.slack_title }}
+          SLACK_TEXT: ${{ steps.sync.outputs.slack_text }}
+        run: bash .github/scripts/bws-slack.sh
