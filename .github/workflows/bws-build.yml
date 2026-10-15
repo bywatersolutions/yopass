@@ -1,0 +1,125 @@
+name: BWS - Build and push image
+
+# Builds the ByWater image for every push to master and to a version branch (a
+# branch named exactly like the upstream tag it is based on, e.g. 15.1.0).
+# Tags: <version> and <version>-<shortsha>; master pushes also move :latest,
+# which production (deploy/docker-swarm) auto-updates from.
+#
+# yamllint disable-line rule:truthy
+on:
+  push:
+    branches:
+      - master
+      - "[0-9]+.[0-9]+.[0-9]+"
+  workflow_dispatch:
+    inputs:
+      push:
+        description: "Push the image to quay.io (false = build only)"
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: bws-build-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  IMAGE: quay.io/bywatersolutions/yopass
+  UPSTREAM_URL: https://github.com/jhaals/yopass.git
+
+jobs:
+  build:
+    name: Test, build and push
+    runs-on: ubuntu-latest
+    services:
+      memcached:
+        image: memcached:1.6
+        ports:
+          - 11211:11211
+    steps:
+      - name: Check out
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      # Our commits sit directly on an upstream tag, so the nearest X.Y.Z tag is the
+      # upstream base version. Upstream tags are fetched explicitly: the fork only
+      # carries stale tags (<= 11.4.2) and 11.4.2 IS reachable from master, so a
+      # plain `git describe` would silently return it.
+      # yamllint disable rule:indentation
+      - name: Determine version and image tags
+        id: version
+        run: |
+          git fetch --no-tags --force "$UPSTREAM_URL" '+refs/tags/*:refs/tags/*'
+          version="$(git describe --tags --abbrev=0 --match '[0-9]*.[0-9]*.[0-9]*' HEAD)"
+          short_sha="$(git rev-parse --short=7 HEAD)"
+          if [[ "$GITHUB_REF_NAME" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ && "$GITHUB_REF_NAME" != "$version" ]]; then
+            echo "::error::branch $GITHUB_REF_NAME is based on upstream tag $version; name version branches after their base tag"
+            exit 1
+          fi
+          tags="$IMAGE:$version,$IMAGE:$version-$short_sha"
+          if [[ "$GITHUB_REF" == "refs/heads/master" ]]; then
+            tags="$tags,$IMAGE:latest"
+          fi
+          {
+            echo "version=$version"
+            echo "short_sha=$short_sha"
+            echo "build_version=$version-bws-$short_sha"
+            echo "tags=$tags"
+          } >> "$GITHUB_OUTPUT"
+          echo "version=$version short_sha=$short_sha tags=$tags"
+      # yamllint enable rule:indentation
+
+      - name: Set up Go
+        uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+          cache-dependency-path: go.sum
+
+      - name: Go tests (gate)
+        env:
+          MEMCACHED: localhost:11211
+        run: go test ./cmd/... ./pkg/... -race
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Log in to quay.io
+        if: github.event_name != 'workflow_dispatch' || inputs.push
+        uses: docker/login-action@v4
+        with:
+          registry: quay.io
+          username: ${{ secrets.QUAY_USER }}
+          password: ${{ secrets.QUAY_PASSWORD }}
+
+      # linux/amd64 only: the node stage under QEMU makes arm64 take 20+ minutes.
+      # To add arm64 later, build natively with a matrix over
+      # [ubuntu-latest, ubuntu-24.04-arm], push by digest and merge with
+      # `docker buildx imagetools create`.
+      - name: Build and push
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          platforms: linux/amd64
+          push: ${{ github.event_name != 'workflow_dispatch' || inputs.push }}
+          tags: ${{ steps.version.outputs.tags }}
+          build-args: |
+            VERSION=${{ steps.version.outputs.build_version }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          provenance: false
+
+      # Failures always; successes only for master (= :latest moved, prod will update).
+      - name: Notify devops
+        if: failure() || (success() && github.ref == 'refs/heads/master')
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_DEVOPS_WEBHOOK }}
+          SLACK_COLOR: ${{ job.status == 'success' && 'good' || 'danger' }}
+          SLACK_TITLE: "Yopass image build ${{ job.status }}: ${{ github.ref_name }}"
+          SLACK_TEXT: |-
+            Upstream ${{ steps.version.outputs.version }}, commit ${{ steps.version.outputs.short_sha }}
+            Tags: ${{ steps.version.outputs.tags }}
+            Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: bash .github/scripts/bws-slack.sh

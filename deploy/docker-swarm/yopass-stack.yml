@@ -1,0 +1,71 @@
+# Sharepass (ByWater's Yopass fork) as a Docker Swarm stack for prod-bwsdocker01.
+#
+#   docker stack deploy -c deploy/docker-swarm/yopass-stack.yml yopass
+#
+# The image is built by .github/workflows/bws-build.yml. :latest always follows
+# the fork's master (newest upstream release + our customizations) and is what
+# shepherd (updaters-stack.yml) rolls out automatically, within SLEEP_TIME of a
+# master build. To freeze a release, pin the image to a version tag (e.g.
+# :15.1.0) and set shepherd.enable to "false".
+#
+# Before deploying, merge the ports/networks/proxy wiring of the existing
+# production stack: the ports block below is a placeholder.
+version: "3.8"
+
+services:
+  memcached:
+    image: memcached:1.6
+    networks:
+      - yopass
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: any
+      labels:
+        # Every live secret exists only in memcached RAM: an automatic update
+        # would wipe them all. Announce updates (diun) but never apply them.
+        shepherd.enable: "false"
+        diun.enable: "true"
+
+  yopass:
+    image: quay.io/bywatersolutions/yopass:latest
+    environment:
+      - MEMCACHED=memcached:11211
+      - PORT=3000
+      - BRAND_TITLE=Sharepass - ByWater Solutions
+      - BRAND_COLOR=#1b4c81
+      - 'BRAND_THEME_LIGHT={"--color-primary":"#1b4c81","--color-primary-content":"#ffffff","--color-secondary":"#63b7e6","--color-secondary-content":"#0f2a47","--color-accent":"#46d2a8","--color-accent-content":"#0b3b2e","--color-neutral":"#1e324d","--color-neutral-content":"#ffffff","--color-base-100":"#ffffff","--color-base-200":"#f3f3f3","--color-base-300":"#dfe6ee","--color-base-content":"#1e2122","--color-info":"#63b7e6","--color-info-content":"#0f2a47","--color-success":"#46d2a8","--color-success-content":"#0b3b2e"}'
+      - 'BRAND_THEME_DARK={"--color-primary":"#63b7e6","--color-primary-content":"#0f2a47","--color-secondary":"#46d2a8","--color-secondary-content":"#0b3b2e","--color-accent":"#63b7e6","--color-accent-content":"#0f2a47","--color-neutral":"#0f2a47","--color-neutral-content":"#e6eef7","--color-base-100":"#1e324d","--color-base-200":"#16283d","--color-base-300":"#2c4669","--color-base-content":"#e6eef7","--color-info":"#63b7e6","--color-info-content":"#0f2a47","--color-success":"#46d2a8","--color-success-content":"#0b3b2e"}'
+      - BRAND_LOGO=https://ik.imagekit.io/bywatersolutions/icon_only_transparent.png
+      - DEFAULT_EXPIRY=1w
+      - DISABLE_FEATURES=true
+    ports:
+      - target: 3000
+        published: 3000
+        protocol: tcp
+        mode: ingress
+    networks:
+      - yopass
+    healthcheck:
+      test: ["CMD", "/yopass-server", "--health-check"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
+    deploy:
+      replicas: 1
+      update_config:
+        order: start-first
+        failure_action: rollback
+        monitor: 30s
+      rollback_config:
+        order: stop-first
+      restart_policy:
+        condition: any
+      labels:
+        shepherd.enable: "true"
+        diun.enable: "true"
+
+networks:
+  yopass:
+    driver: overlay
