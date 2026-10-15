@@ -1,30 +1,29 @@
-# Sharepass (ByWater's Yopass fork) as a Docker Swarm stack for prod-bwsdocker01.
+# Sharepass (ByWater's Yopass fork) on the prod-bwsdocker01 Docker Swarm.
 #
 #   docker stack deploy -c deploy/docker-swarm/yopass-stack.yml yopass
 #
-# The image is built by .github/workflows/bws-build.yml. :latest always follows
-# the fork's master (newest upstream release + our customizations) and is what
-# shepherd (updaters-stack.yml) rolls out automatically, within SLEEP_TIME of a
-# master build. To freeze a release, pin the image to a version tag (e.g.
-# :15.1.0) and set shepherd.enable to "false".
-#
-# Before deploying, merge the ports/networks/proxy wiring of the existing
-# production stack: the ports block below is a placeholder.
+# Source of truth for the production "yopass" stack (previously defined in
+# Portainer). The image is built by .github/workflows/bws-build.yml; :latest
+# always follows the fork's master (newest upstream release + our
+# customizations) and the host's shepherd rolls it out automatically. To freeze
+# a release, pin the image to a version tag (e.g. :15.1.0) and set the shepherd
+# labels on the yopass service to "false".
 version: "3.8"
 
 services:
   memcached:
-    image: memcached:1.6
+    # Pinned to the digest running in production. Every live secret exists only
+    # in memcached RAM, so this service must never be restarted by a redeploy or
+    # an updater: an unchanged spec leaves the running task alone, and the
+    # shepherd labels tell the updaters to skip it. Bump the digest only in a
+    # planned maintenance window (all unexpired secrets are lost).
+    image: memcached:latest@sha256:dc561d52bb8ad3c038867123ed2dc8357c4c128f047cdbd526cd65cf39408cbd
     networks:
-      - yopass
+      - yopass-tier
     deploy:
-      replicas: 1
-      restart_policy:
-        condition: any
       labels:
-        # Every live secret exists only in memcached RAM: an automatic update
-        # would wipe them all. Announce updates (diun) but never apply them.
         shepherd.enable: "false"
+        shepherd.autodeploy: "false"
         diun.enable: "true"
 
   yopass:
@@ -45,7 +44,8 @@ services:
         protocol: tcp
         mode: ingress
     networks:
-      - yopass
+      - traefik-public
+      - yopass-tier
     healthcheck:
       test: ["CMD", "/yopass-server", "--health-check"]
       interval: 30s
@@ -60,12 +60,18 @@ services:
         monitor: 30s
       rollback_config:
         order: stop-first
-      restart_policy:
-        condition: any
       labels:
+        traefik.enable: "true"
+        traefik.constraint-label: traefik-public
+        traefik.http.routers.yopass.entrypoints: http
+        traefik.http.routers.yopass.rule: "Host(`sharepass.tools.bywatersolutions.com`)"
+        traefik.http.routers.yopass.service: yopass
+        traefik.http.services.yopass.loadbalancer.server.port: "3000"
         shepherd.enable: "true"
         diun.enable: "true"
 
 networks:
-  yopass:
+  traefik-public:
+    external: true
+  yopass-tier:
     driver: overlay
