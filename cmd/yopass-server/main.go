@@ -155,9 +155,11 @@ func main() {
 		ThemeCustomLight: viper.GetString("theme-custom-light"),
 		ThemeCustomDark:  viper.GetString("theme-custom-dark"),
 
-		BrandTitle: viper.GetString("brand-title"),
-		BrandColor: viper.GetString("brand-color"),
-		BrandLogo:  viper.GetString("brand-logo"),
+		BrandTitle:      viper.GetString("brand-title"),
+		BrandColor:      viper.GetString("brand-color"),
+		BrandLogo:       viper.GetString("brand-logo"),
+		BrandThemeLight: viper.GetString("brand-theme-light"),
+		BrandThemeDark:  viper.GetString("brand-theme-dark"),
 
 		AllowCustomExpiration: viper.GetBool("allow-custom-expiration"),
 		MinExpiration:         expirationSeconds(viper.GetString("min-expiration")),

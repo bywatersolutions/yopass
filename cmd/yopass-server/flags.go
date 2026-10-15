@@ -106,6 +106,8 @@ func init() {
 	pflag.String("brand-title", "", "custom brand title to replace 'Yopass' in the navbar (no license key required)")
 	pflag.String("brand-color", "", "custom primary color as hex (e.g. '#ff6600'), no license key required")
 	pflag.String("brand-logo", "", "URL to a custom logo image for the navbar (max 40x40px recommended), no license key required")
+	pflag.String("brand-theme-light", "", "JSON object of CSS variables for the light theme (e.g. '{\"--color-primary\":\"#1b4c81\"}'), no license key required")
+	pflag.String("brand-theme-dark", "", "JSON object of CSS variables for the dark theme, same format as brand-theme-light, no license key required")
 	pflag.String("license-key", "", "JWT license key for premium features (theming, custom branding)")
 	pflag.String("file-store", "", "file store backend for large files ('disk' or 's3'), defaults to database storage")
 	pflag.String("file-store-path", "/tmp/yopass-files", "base path for disk file store")

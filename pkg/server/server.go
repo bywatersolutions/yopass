@@ -80,9 +80,11 @@ type Server struct {
 	// Branding without a license key (ByWater fork). These feed the same
 	// APP_NAME, LOGO_URL and custom theme config keys the website already
 	// reads for licensed branding, so the frontend needs no changes.
-	BrandTitle string
-	BrandColor string
-	BrandLogo  string
+	BrandTitle      string
+	BrandColor      string
+	BrandLogo       string
+	BrandThemeLight string
+	BrandThemeDark  string
 
 	// DefaultExpiry is the default secret lifetime.
 	DefaultExpiry string
