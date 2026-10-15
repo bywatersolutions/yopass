@@ -25,7 +25,8 @@ services:
       - DIUN_PROVIDERS_SWARM_WATCHBYDEFAULT=false
       - DIUN_NOTIF_SLACK_WEBHOOKURLFILE=/run/secrets/slack_devops_webhook
       - DIUN_NOTIF_SLACK_RENDERFIELDS=true
-      - 'DIUN_NOTIF_SLACK_TEMPLATEBODY=prod-bwsdocker01: {{ .Entry.Image }} {{ if eq .Entry.Status "new" }}now watched{{ else }}updated in registry{{ end }}'
+      # No custom message template: swarm expands {{ }} in service env values
+      # itself and rejects diun's template syntax.
     volumes:
       - diun-data:/data
       - /var/run/docker.sock:/var/run/docker.sock
