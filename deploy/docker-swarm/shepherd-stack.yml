@@ -1,0 +1,60 @@
+# shepherd: automatic rolling updates for swarm services that opt in with the
+# label shepherd.enable=true, plus an apprise sidecar that turns its
+# "service updated / update failed" calls into Slack posts.
+#
+# prod-bwsdocker01 ALREADY runs a shepherd (stack "shepherd", service
+# shepherd_shepherd) that watches the whole swarm, so do not deploy this
+# there; it is for a host without one. Deploy from a manager node:
+#
+#   # the #devops webhook in Apprise form: https://hooks.slack.com/services/A/B/C -> slack://A/B/C
+#   export APPRISE_SLACK_URL='slack://T.../B.../xxx'
+#   docker stack deploy -c deploy/docker-swarm/shepherd-stack.yml shepherd
+version: "3.8"
+
+services:
+  shepherd:
+    image: containrrr/shepherd:v1.8.1
+    environment:
+      - TZ=America/New_York
+      - SLEEP_TIME=15m
+      - FILTER_SERVICES=label=shepherd.enable=true
+      - UPDATE_OPTIONS=--update-order=start-first --update-failure-action=rollback
+      # shepherd treats these as presence checks: remove them to turn them off,
+      # never set them to "false".
+      - ROLLBACK_ON_FAILURE=true
+      - IMAGE_AUTOCLEAN_LIMIT=3
+      - APPRISE_SIDECAR_URL=http://apprise:8000/notify
+      - VERBOSE=true
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - shepherd
+    deploy:
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+      labels:
+        shepherd.enable: "false"
+        shepherd.autodeploy: "false"
+        diun.enable: "true"
+
+  apprise:
+    image: caronc/apprise:2.0
+    environment:
+      - APPRISE_STATELESS_URLS=${APPRISE_SLACK_URL:?APPRISE_SLACK_URL is required}
+    networks:
+      - shepherd
+    deploy:
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+      labels:
+        shepherd.enable: "false"
+        shepherd.autodeploy: "false"
+        diun.enable: "true"
+
+networks:
+  shepherd:
+    driver: overlay
