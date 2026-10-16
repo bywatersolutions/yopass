@@ -38,6 +38,11 @@ jobs:
         image: memcached:1.6
         ports:
           - 11211:11211
+      # Production stores secrets in Redis, so the gate tests that backend too.
+      redis:
+        image: redis:8.10-alpine
+        ports:
+          - 6379:6379
     steps:
       - name: Check out
         uses: actions/checkout@v7
@@ -81,6 +86,7 @@ jobs:
       - name: Go tests (gate)
         env:
           MEMCACHED: localhost:11211
+          REDIS_URL: redis://localhost:6379/0
         run: go test ./cmd/... ./pkg/... -race
 
       - name: Set up Docker Buildx

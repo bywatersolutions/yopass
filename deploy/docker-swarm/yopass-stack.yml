@@ -6,30 +6,60 @@
 # Portainer). The image is built by .github/workflows/bws-build.yml; :latest
 # always follows the fork's master (newest upstream release + our
 # customizations) and the host's shepherd rolls it out automatically. To freeze
-# a release, pin the image to a version tag (e.g. :15.1.0) and set the shepherd
-# labels on the yopass service to "false".
+# a release, pin the image to a version tag (e.g. :15.1.0).
+#
+# The host's shepherd updates every service on the swarm whenever its image tag
+# gets a new digest, whatever the labels say (the shepherd.enable labels are for
+# deploy/docker-swarm/shepherd-stack.yml). That is why secrets live in Redis with
+# persistence on a volume: an automatic restart costs at most ~1s of writes
+# instead of wiping every secret, as it did with memcached.
 version: "3.8"
 
 services:
-  memcached:
-    # Pinned to the digest running in production. Every live secret exists only
-    # in memcached RAM, so this service must never be restarted by a redeploy or
-    # an updater: an unchanged spec leaves the running task alone, and the
-    # shepherd labels tell the updaters to skip it. Bump the digest only in a
-    # planned maintenance window (all unexpired secrets are lost).
-    image: memcached:latest@sha256:dc561d52bb8ad3c038867123ed2dc8357c4c128f047cdbd526cd65cf39408cbd
+  redis:
+    # Minor version pinned: updaters only bring in patch releases of 8.10.
+    image: redis:8.10-alpine
+    # AOF with fsync every second is what makes restarts safe; the RDB save
+    # points (Redis's defaults, spelled out) add compact snapshots for backups.
+    # Only ciphertext is stored: yopass encrypts in the browser.
+    command:
+      - redis-server
+      - --appendonly
+      - "yes"
+      - --appendfsync
+      - everysec
+      - --save
+      - 3600 1 300 100 60 10000
+    volumes:
+      - redis-data:/data
     networks:
       - yopass-tier
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
+    # Time to finish the final AOF fsync / RDB save on shutdown.
+    stop_grace_period: 30s
     deploy:
+      replicas: 1
+      update_config:
+        # Two Redis processes must never share the data volume.
+        order: stop-first
+      placement:
+        constraints:
+          # The data volume is local to this node.
+          - node.hostname == prod-bwsdocker01
       labels:
-        shepherd.enable: "false"
-        shepherd.autodeploy: "false"
+        shepherd.enable: "true"
         diun.enable: "true"
 
   yopass:
     image: quay.io/bywatersolutions/yopass:latest
     environment:
-      - MEMCACHED=memcached:11211
+      - DATABASE=redis
+      - REDIS=redis://redis:6379/0
       - PORT=3000
       - BRAND_TITLE=Sharepass - ByWater Solutions
       - BRAND_COLOR=#1b4c81
@@ -69,6 +99,9 @@ services:
         traefik.http.services.yopass.loadbalancer.server.port: "3000"
         shepherd.enable: "true"
         diun.enable: "true"
+
+volumes:
+  redis-data: {}
 
 networks:
   traefik-public:
