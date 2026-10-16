@@ -34,8 +34,10 @@ host loss.
 2. `.github/workflows/bws-build.yml` builds `quay.io/bywatersolutions/yopass:<version>`
    from the branch and, from `master`, also moves `:latest`.
 3. The host's shepherd notices the new `:latest` digest and rolls the `yopass` service
-   (start-first, rollback on failure). It also applies new `redis:8.10-alpine` patch
-   releases, which is safe because Redis reloads its data from the volume.
+   (start-first, rollback on failure). Our images are pushed with Docker v2 manifests
+   because that shepherd's Docker CLI cannot read OCI manifests. Redis
+   (`mirror.gcr.io/library/redis:8.10-alpine`) is updated by hand when diun reports a
+   patch release; a restart is safe because Redis reloads its data from the volume.
 
 Slack (#devops) messages along the way: the sync result (synced, or conflict with a
 GitHub issue), the master build result, and diun's "updated in registry" for every

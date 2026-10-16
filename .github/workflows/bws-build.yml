@@ -104,12 +104,15 @@ jobs:
       # To add arm64 later, build natively with a matrix over
       # [ubuntu-latest, ubuntu-24.04-arm], push by digest and merge with
       # `docker buildx imagetools create`.
+      # Docker v2 manifests instead of OCI: the shepherd on prod-bwsdocker01 runs a
+      # 2023 Docker CLI that cannot read OCI manifests, so it never rolled out
+      # OCI-format builds.
       - name: Build and push
         uses: docker/build-push-action@v7
         with:
           context: .
           platforms: linux/amd64
-          push: ${{ github.event_name != 'workflow_dispatch' || inputs.push }}
+          outputs: type=image,push=${{ github.event_name != 'workflow_dispatch' || inputs.push }},oci-mediatypes=false
           tags: ${{ steps.version.outputs.tags }}
           build-args: |
             VERSION=${{ steps.version.outputs.build_version }}
