@@ -2,9 +2,9 @@
 
 Stacks in this directory:
 
-- `yopass-stack.yml`: the production `yopass` stack (Sharepass + memcached), with the
-  Traefik labels for sharepass.tools.bywatersolutions.com. Source of truth; redeploy
-  after any change.
+- `yopass-stack.yml`: the production `yopass` stack (Sharepass + Redis with persistence
+  on the `yopass_redis-data` volume), with the Traefik labels for
+  sharepass.tools.bywatersolutions.com. Source of truth; redeploy after any change.
 - `diun-stack.yml`: diun, which posts to Slack when a watched image has a newer version
   in its registry.
 - `shepherd-stack.yml`: shepherd + apprise for a host that has no shepherd. prod-bwsdocker01
@@ -22,9 +22,10 @@ docker stack deploy -c deploy/docker-swarm/yopass-stack.yml yopass
 docker stack deploy -c deploy/docker-swarm/diun-stack.yml diun
 ```
 
-The memcached service is pinned to the digest it is running and keeps the same task
-spec, so redeploying the stack does not restart it. Every live secret exists only in its
-RAM; bump the digest only in a planned maintenance window.
+Secrets are stored in Redis with AOF persistence (fsync every second) plus RDB snapshots,
+on the `yopass_redis-data` volume, so restarts and updates of the Redis service keep them.
+Back up `/data` in that volume (`appendonlydir/` and `dump.rdb`) to keep them across a
+host loss.
 
 ## How a new version reaches production
 
@@ -33,8 +34,8 @@ RAM; bump the digest only in a planned maintenance window.
 2. `.github/workflows/bws-build.yml` builds `quay.io/bywatersolutions/yopass:<version>`
    from the branch and, from `master`, also moves `:latest`.
 3. The host's shepherd notices the new `:latest` digest and rolls the `yopass` service
-   (start-first, rollback on failure). memcached carries `shepherd.autodeploy=false` and
-   `shepherd.enable=false` so no updater touches it.
+   (start-first, rollback on failure). It also applies new `redis:8.10-alpine` patch
+   releases, which is safe because Redis reloads its data from the volume.
 
 Slack (#devops) messages along the way: the sync result (synced, or conflict with a
 GitHub issue), the master build result, and diun's "updated in registry" for every
