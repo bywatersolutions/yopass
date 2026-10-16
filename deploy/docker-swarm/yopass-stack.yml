@@ -17,8 +17,12 @@ version: "3.8"
 
 services:
   redis:
-    # Minor version pinned: updaters only bring in patch releases of 8.10.
-    image: redis:8.10-alpine
+    # Docker Hub's official image, served by Google's mirror: the host's
+    # anonymous Docker Hub pull quota is used up by shepherd's polling, which
+    # left this service unable to pull redis:8.10-alpine. The host's 2023
+    # shepherd can't read this image's OCI index, so Redis is updated by hand
+    # when diun reports a new 8.10 patch release.
+    image: mirror.gcr.io/library/redis:8.10-alpine
     # AOF with fsync every second is what makes restarts safe; the RDB save
     # points (Redis's defaults, spelled out) add compact snapshots for backups.
     # Only ciphertext is stored: yopass encrypts in the browser.
