@@ -114,4 +114,16 @@ describe('parseConfig', () => {
     expect(config.FORCE_EXPIRATION).toBe(604800);
     expect(config.THEME_CUSTOM_LIGHT).toEqual({ '--color-primary': 'red' });
   });
+
+  it('keeps the two-week, one-month and two-month presets', () => {
+    const config = parseConfig({
+      DEFAULT_EXPIRY: 1209600,
+      FORCE_EXPIRATION: 5184000,
+    });
+    expect(config.DEFAULT_EXPIRY).toBe(1209600);
+    expect(config.FORCE_EXPIRATION).toBe(5184000);
+    expect(parseConfig({ DEFAULT_EXPIRY: 2592000 }).DEFAULT_EXPIRY).toBe(
+      2592000,
+    );
+  });
 });

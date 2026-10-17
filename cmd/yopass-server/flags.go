@@ -94,7 +94,7 @@ func init() {
 	pflag.Bool("allow-custom-expiration", false, "allow user-entered expiration durations within configured bounds")
 	pflag.String("min-expiration", "1m", "minimum custom expiration (integer s, m, h, d, w units)")
 	pflag.String("max-expiration", "90d", "maximum custom expiration (integer s, m, h, d, w units)")
-	pflag.String("default-expiry", "1h", "default expiry [1h, 1d, 1w]; custom durations require --allow-custom-expiration")
+	pflag.String("default-expiry", "1h", "default expiry [1h, 1d, 1w, 2w, 30d, 60d]; custom durations require --allow-custom-expiration")
 	pflag.String("force-expiration", "", "force secrets, uploads, and requests to this duration; custom durations require --allow-custom-expiration")
 	pflag.String("theme-light", server.DefaultThemeLight, "DaisyUI theme name for light mode")
 	pflag.String("theme-dark", server.DefaultThemeDark, "DaisyUI theme name for dark mode")

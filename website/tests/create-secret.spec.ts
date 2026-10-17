@@ -198,6 +198,24 @@ test.describe('Create Secret', () => {
     // Validate One Week expiration payload
     const weekRequest = mockAPI.getLastRequest('/secret');
     expect(weekRequest?.payload.expiration).toBe(604800);
+
+    // Go back and test Two Months expiration (5184000 seconds)
+    await page.goto('/');
+    await page.waitForLoadState('networkidle');
+    await page.fill(
+      'textarea[placeholder="Enter your secret..."]',
+      testSecrets.simple.message,
+    );
+    await page.check('input[value="5184000"]');
+    await page.click('button[type="submit"]');
+
+    await expect(
+      page.locator('h2:has-text("Secret stored securely")'),
+    ).toBeVisible();
+
+    // Validate Two Months expiration payload
+    const twoMonthsRequest = mockAPI.getLastRequest('/secret');
+    expect(twoMonthsRequest?.payload.expiration).toBe(5184000);
   });
 
   test('should toggle one-time download setting', async ({

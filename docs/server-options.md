@@ -45,7 +45,7 @@ Complete reference for `yopass-server`. All flags can also be set via environmen
 | `--allow-custom-expiration` | `ALLOW_CUSTOM_EXPIRATION` | `false` | Allow custom expiration for secrets, uploads, and secret requests; available without a license |
 | `--min-expiration` | `MIN_EXPIRATION` | `1m` | Inclusive minimum custom duration |
 | `--max-expiration` | `MAX_EXPIRATION` | `90d` | Inclusive maximum custom duration |
-| `--default-expiry` | `DEFAULT_EXPIRY` | `1h` | Default expiration pre-selected in the UI: `1h`, `1d`, or `1w`; custom durations are accepted when enabled |
+| `--default-expiry` | `DEFAULT_EXPIRY` | `1h` | Default expiration pre-selected in the UI: `1h`, `1d`, `1w`, `2w`, `30d`, or `60d`; custom durations are accepted when enabled |
 | `--force-expiration` | `FORCE_EXPIRATION` | — | Force secrets, file uploads, and secret requests to a fixed expiration: `1h`, `1d`, or `1w`, or a custom duration when enabled. The server rejects any create request with a different value (`400 Expiration does not match server policy`). The UI replaces the expiration selector with the fixed duration |
 | `--default-onetime-secrets` | `DEFAULT_ONETIME_SECRETS` | `true` | Check One-time download by default on the text and file forms; users can change it unless `--force-onetime-secrets` is enabled |
 | `--force-onetime-secrets` | `FORCE_ONETIME_SECRETS` | `false` | Reject secrets that are not set to one-time viewing |
