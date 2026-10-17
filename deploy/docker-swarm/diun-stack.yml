@@ -5,9 +5,9 @@
 #   printf '%s' 'https://hooks.slack.com/services/T.../B.../xxx' | docker secret create slack_devops_webhook -
 #   docker stack deploy -c deploy/docker-swarm/diun-stack.yml diun
 #
-# Opt-in: only services labelled diun.enable=true are watched. Set
-# DIUN_PROVIDERS_SWARM_WATCHBYDEFAULT=true to watch every service instead
-# (mind Docker Hub's anonymous pull-rate limit).
+# Watches every swarm service: the host's shepherd only updates services that
+# opt in with shepherd.enable=true, so diun is how #devops hears about new
+# images for everything else. Opt a service out with the label diun.enable=false.
 version: "3.8"
 
 services:
@@ -22,7 +22,7 @@ services:
       - DIUN_WATCH_JITTER=30s
       - DIUN_WATCH_FIRSTCHECKNOTIF=false
       - DIUN_PROVIDERS_SWARM=true
-      - DIUN_PROVIDERS_SWARM_WATCHBYDEFAULT=false
+      - DIUN_PROVIDERS_SWARM_WATCHBYDEFAULT=true
       - DIUN_NOTIF_SLACK_WEBHOOKURLFILE=/run/secrets/slack_devops_webhook
       - DIUN_NOTIF_SLACK_RENDERFIELDS=true
       # No custom message template: swarm expands {{ }} in service env values
