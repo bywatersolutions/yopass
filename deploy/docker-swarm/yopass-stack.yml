@@ -8,20 +8,18 @@
 # customizations) and the host's shepherd rolls it out automatically. To freeze
 # a release, pin the image to a version tag (e.g. :15.1.0).
 #
-# The host's shepherd updates every service on the swarm whenever its image tag
-# gets a new digest, whatever the labels say (the shepherd.enable labels are for
-# deploy/docker-swarm/shepherd-stack.yml). That is why secrets live in Redis with
-# persistence on a volume: an automatic restart costs at most ~1s of writes
-# instead of wiping every secret, as it did with memcached.
+# The host's shepherd only updates services labelled shepherd.enable=true, when
+# their image tag gets a new digest; diun alerts #devops about every other
+# service. Secrets live in Redis with persistence on a volume, so an automatic
+# restart costs at most ~1s of writes instead of wiping every secret, as it did
+# with memcached.
 version: "3.8"
 
 services:
   redis:
-    # Docker Hub's official image, served by Google's mirror: the host's
-    # anonymous Docker Hub pull quota is used up by shepherd's polling, which
-    # left this service unable to pull redis:8.10-alpine. The host's 2023
-    # shepherd can't read this image's OCI index, so Redis is updated by hand
-    # when diun reports a new 8.10 patch release.
+    # Docker Hub's official image, served by Google's mirror, which has no pull
+    # limit (the host once ran out of anonymous Docker Hub pulls and could not
+    # start Redis). Minor version pinned: shepherd applies 8.10 patch releases.
     image: mirror.gcr.io/library/redis:8.10-alpine
     # AOF with fsync every second is what makes restarts safe; the RDB save
     # points (Redis's defaults, spelled out) add compact snapshots for backups.

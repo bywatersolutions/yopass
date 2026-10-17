@@ -8,7 +8,10 @@ Stacks in this directory:
 - `diun-stack.yml`: diun, which posts to Slack when a watched image has a newer version
   in its registry.
 - `shepherd-stack.yml`: shepherd + apprise for a host that has no shepherd. prod-bwsdocker01
-  already runs one (stack `shepherd`), so it is not deployed there.
+  already runs one (stack `shepherd`), configured the same way since 2026-10-17: shepherd
+  v1.8.1, opt-in with `FILTER_SERVICES=label=shepherd.enable=true`, and the host's Docker Hub
+  login mounted read-only with `WITH_REGISTRY_AUTH`. Those settings were applied with
+  `docker service update`, so a redeploy of that stack from Portainer would undo them.
 
 ## Deploy
 
@@ -34,14 +37,13 @@ host loss.
 2. `.github/workflows/bws-build.yml` builds `quay.io/bywatersolutions/yopass:<version>`
    from the branch and, from `master`, also moves `:latest`.
 3. The host's shepherd notices the new `:latest` digest and rolls the `yopass` service
-   (start-first, rollback on failure). Our images are pushed with Docker v2 manifests
-   because that shepherd's Docker CLI cannot read OCI manifests. Redis
-   (`mirror.gcr.io/library/redis:8.10-alpine`) is updated by hand when diun reports a
-   patch release; a restart is safe because Redis reloads its data from the volume.
+   (start-first, rollback on failure). It also applies Redis 8.10 patch releases
+   (`mirror.gcr.io/library/redis:8.10-alpine`); a restart is safe because Redis reloads its
+   data from the volume. Only services labelled `shepherd.enable=true` are updated.
 
 Slack (#devops) messages along the way: the sync result (synced, or conflict with a
 GitHub issue), the master build result, and diun's "updated in registry" for every
-service labelled `diun.enable=true`.
+service on the swarm (opt out with the label `diun.enable=false`).
 
 ## Operating
 
