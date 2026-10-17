@@ -333,7 +333,8 @@ test('keyboard selection of Custom submits the displayed deadline', async ({
   });
   await page.goto('/');
   await page.getByRole('radio', { name: 'One Day', exact: true }).check();
-  await page.getByRole('radio', { name: 'One Week', exact: true }).focus();
+  // The last preset before Custom; arrow keys move to the next radio.
+  await page.getByRole('radio', { name: 'Two Months', exact: true }).focus();
   await page.keyboard.press('ArrowRight');
   await page.keyboard.press('Escape');
   const picker = page.getByLabel('Expiration date and time', { exact: true });

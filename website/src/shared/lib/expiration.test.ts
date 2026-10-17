@@ -12,7 +12,14 @@ import {
 
 describe('expiration policy', () => {
   it('keeps standard choices when custom expiration is disabled', () => {
-    for (const value of ['3600', '86400', '604800'])
+    for (const value of [
+      '3600',
+      '86400',
+      '604800',
+      '1209600',
+      '2592000',
+      '5184000',
+    ])
       expect(validExpiration(value, defaultConfig)).toBe(true);
     for (const value of ['60', '7776000', '3600junk', '0', '-1', '1.5', ''])
       expect(validExpiration(value, defaultConfig)).toBe(false);

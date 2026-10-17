@@ -195,7 +195,7 @@ test.describe('Secret Requests', () => {
       DEFAULT_EXPIRY: 86400,
     });
     await page.goto('/#/request');
-    await expect(page.getByRole('radio')).toHaveCount(3);
+    await expect(page.getByRole('radio')).toHaveCount(6);
     await expect(
       page.getByRole('radio', { name: 'One Day', exact: true }),
     ).toBeChecked();

@@ -109,7 +109,7 @@ curl -X POST https://yopass.example.com/request \
 }
 ```
 
-`expiration` is one of `3600`, `86400`, or `604800` seconds. Keep the `token` secret — it authorizes retrieval, revocation, and key rotation. The link to hand out is `https://yopass.example.com/#/r/<id>/<fingerprint>`, where `<fingerprint>` is the last 16 hex characters of the public key fingerprint.
+`expiration` is one of `3600`, `86400`, `604800`, `1209600`, `2592000`, or `5184000` seconds. Keep the `token` secret — it authorizes retrieval, revocation, and key rotation. The link to hand out is `https://yopass.example.com/#/r/<id>/<fingerprint>`, where `<fingerprint>` is the last 16 hex characters of the public key fingerprint.
 
 The `label` is stored and transferred in plaintext and displayed to anyone opening the request link — it cannot be encrypted, so keep it free of sensitive information.
 

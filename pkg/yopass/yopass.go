@@ -54,13 +54,17 @@ var pgpConfigArgon2 = func() *packet.Config {
 // lifetimes, mapping the human-readable form to seconds. pkg/server and the
 // CLI both derive their validation from it.
 var expirations = map[string]int32{
-	"1h": 3600,
-	"1d": 86400,
-	"1w": 604800,
+	"1h":  3600,
+	"1d":  86400,
+	"1w":  604800,
+	"2w":  1209600,
+	"30d": 2592000, // one month
+	"60d": 5184000, // two months
 }
 
-// ExpirationSeconds converts a human-readable expiry duration ("1h", "1d" or
-// "1w") to its equivalent in seconds. ok is false for unsupported values.
+// ExpirationSeconds converts a human-readable expiry duration ("1h", "1d",
+// "1w", "2w", "30d" or "60d") to its equivalent in seconds. ok is false for
+// unsupported values.
 func ExpirationSeconds(s string) (seconds int32, ok bool) {
 	seconds, ok = expirations[s]
 	return seconds, ok

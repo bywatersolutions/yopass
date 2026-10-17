@@ -115,7 +115,7 @@ export function parseConfig(value: unknown): Config {
       ? seconds >= min && seconds <= max
         ? seconds
         : undefined
-      : [3600, 86400, 604800].includes(seconds)
+      : [3600, 86400, 604800, 1209600, 2592000, 5184000].includes(seconds)
         ? seconds
         : undefined;
   }

@@ -66,6 +66,36 @@ func TestCustomExpirationEndpoints(t *testing.T) {
 	}
 }
 
+// TestLongerExpirationPresets checks that the two-week, one-month and
+// two-month presets are accepted without --allow-custom-expiration and stored
+// with exactly that lifetime.
+func TestLongerExpirationPresets(t *testing.T) {
+	encrypted, err := yopass.Encrypt(strings.NewReader("secret"), "password")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, ttl := range []int32{1209600, 2592000, 5184000} {
+		t.Run(fmt.Sprint(ttl), func(t *testing.T) {
+			db := newMemoryDB()
+			y := newTestServer(t, db, 10000, false)
+			body, _ := json.Marshal(map[string]interface{}{"expiration": ttl, "message": encrypted})
+			rr := httptest.NewRecorder()
+			y.HTTPHandler().ServeHTTP(rr, httptest.NewRequest("POST", "/create/secret", bytes.NewReader(body)))
+			if rr.Code != http.StatusOK {
+				t.Fatalf("got %d, want 200: %s", rr.Code, rr.Body.String())
+			}
+			if len(db.data) != 1 {
+				t.Fatalf("stored %d secrets, want 1", len(db.data))
+			}
+			for _, stored := range db.data {
+				if stored.Expiration != ttl {
+					t.Fatalf("stored TTL %d, want %d", stored.Expiration, ttl)
+				}
+			}
+		})
+	}
+}
+
 func TestCustomExpirationSettings(t *testing.T) {
 	for _, tc := range []struct {
 		name                     string
@@ -79,6 +109,8 @@ func TestCustomExpirationSettings(t *testing.T) {
 		{"custom forced", true, "1m", "90d", "1h", "90d", "redis", true},
 		{"disabled default", false, "1m", "90d", "90d", "", "redis", false},
 		{"disabled forced", false, "1m", "90d", "1h", "90d", "redis", false},
+		{"disabled default two weeks", false, "", "", "2w", "", "redis", true},
+		{"disabled forced two months", false, "", "", "1h", "60d", "memcached", true},
 		{"bad min", true, "0s", "90d", "1h", "", "redis", false},
 		{"bad max", true, "1m", "1.5d", "1h", "", "redis", false},
 		{"reversed", true, "90d", "1m", "1h", "", "redis", false},

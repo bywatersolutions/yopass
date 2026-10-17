@@ -42,6 +42,9 @@ export function ExpirationSelector({ value, onChange, legend }: Props) {
     t('expiration.optionOneHourLabel'),
     t('expiration.optionOneDayLabel'),
     t('expiration.optionOneWeekLabel'),
+    t('expiration.optionTwoWeeksLabel'),
+    t('expiration.optionOneMonthLabel'),
+    t('expiration.optionTwoMonthsLabel'),
   ];
   function formatDuration(seconds: number) {
     const preset = expirationPresets.indexOf(seconds);
@@ -113,7 +116,7 @@ export function ExpirationSelector({ value, onChange, legend }: Props) {
       <legend className="label-text font-semibold text-base">
         {legend || t('expiration.legend')}
       </legend>
-      <div className="grid grid-cols-2 gap-2 mt-2 sm:grid-flow-col sm:auto-cols-fr sm:grid-cols-none">
+      <div className="grid grid-cols-2 gap-2 mt-2 sm:grid-cols-3">
         {presets.map(seconds => (
           <input
             key={seconds}
