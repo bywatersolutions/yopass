@@ -64,7 +64,7 @@ func ValidateExpirationSettings(allow bool, min, max, defaultExpiry, forced, dat
 		seconds, valid := yopass.ParseExpirationDuration(setting.value)
 		if !valid || !policy.acceptsExpiration(seconds) || (!allow && !ValidExpiryString(setting.value)) {
 			if !allow {
-				return fmt.Errorf("invalid --%s value %q, expected one of: 1h, 1d, 1w", setting.name, setting.value)
+				return fmt.Errorf("invalid --%s value %q, expected one of: 1h, 1d, 1w, 2w, 30d, 60d", setting.name, setting.value)
 			}
 			return fmt.Errorf("--%s must be a positive duration between --min-expiration and --max-expiration", setting.name)
 		}

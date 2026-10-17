@@ -1,6 +1,8 @@
 import type { Config } from './config';
 
-export const expirationPresets = [3600, 86400, 604800];
+export const expirationPresets = [
+  3600, 86400, 604800, 1209600, 2592000, 5184000,
+];
 
 // Custom selections retain an absolute deadline while forms are being edited.
 // The API still receives only a relative lifetime in whole seconds.

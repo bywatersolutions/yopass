@@ -16,7 +16,7 @@ const pgpMessageType = "PGP MESSAGE"
 // CLI client share one table; these helpers adapt it to this package's needs.
 
 // ValidExpiryString reports whether s is a supported human-readable expiry
-// duration ("1h", "1d" or "1w").
+// duration ("1h", "1d", "1w", "2w", "30d" or "60d").
 func ValidExpiryString(s string) bool {
 	_, ok := yopass.ExpirationSeconds(s)
 	return ok
