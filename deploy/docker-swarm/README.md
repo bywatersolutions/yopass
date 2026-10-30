@@ -8,18 +8,18 @@ Stacks in this directory:
 - `diun-stack.yml`: diun, which posts to Slack when a watched image has a newer version
   in its registry.
 - `shepherd-stack.yml`: shepherd + apprise for a host that has no shepherd. prod-bwsdocker01
-  already runs one (stack `shepherd`), configured the same way since 2026-10-17: shepherd
-  v1.8.1, opt-in with `FILTER_SERVICES=label=shepherd.enable=true`, and the host's Docker Hub
-  login mounted read-only with `WITH_REGISTRY_AUTH`. Those settings were applied with
-  `docker service update`, so a redeploy of that stack from Portainer would undo them.
+  already runs one (stack `shepherd`), defined by the `shepherd` role in
+  ByWaterSolutions/tools-swarm: shepherd v1.8.1 run nightly at 09:30 UTC by swarm-cronjob,
+  opt-in with `FILTER_SERVICES=label=shepherd.enable=true`, and the host's Docker Hub login
+  mounted read-only with `WITH_REGISTRY_AUTH`.
 
 ## Deploy
 
 On a manager node, from a checkout of this repo:
 
 ```
-# once: the #devops incoming webhook, for diun (docker secret, stays out of git)
-printf '%s' 'https://hooks.slack.com/services/T.../B.../xxx' | docker secret create slack_devops_webhook -
+# once: the #enterprise-container-updates incoming webhook, for diun (docker secret, stays out of git)
+printf '%s' 'https://hooks.slack.com/services/T.../B.../xxx' | docker secret create slack_container_updates_webhook -
 
 docker stack deploy -c deploy/docker-swarm/yopass-stack.yml yopass
 docker stack deploy -c deploy/docker-swarm/diun-stack.yml diun
@@ -36,14 +36,16 @@ host loss.
    replays our commits onto it, pushes branch `<version>` and moves `master`.
 2. `.github/workflows/bws-build.yml` builds `quay.io/bywatersolutions/yopass:<version>`
    from the branch and, from `master`, also moves `:latest`.
-3. The host's shepherd notices the new `:latest` digest and rolls the `yopass` service
+3. The host's shepherd notices the new `:latest` digest on its nightly run and rolls the `yopass` service
    (start-first, rollback on failure). It also applies Redis 8.10 patch releases
    (`mirror.gcr.io/library/redis:8.10-alpine`); a restart is safe because Redis reloads its
    data from the volume. Only services labelled `shepherd.enable=true` are updated.
 
-Slack (#devops) messages along the way: the sync result (synced, or conflict with a
-GitHub issue), the master build result, and diun's "updated in registry" for every
-service on the swarm (opt out with the label `diun.enable=false`).
+Slack messages along the way: the sync result (synced, or conflict with a GitHub issue)
+and the master build result in #devops, and shepherd's "service updated / update failed"
+in #enterprise-container-updates. diun posts "updated in registry" to
+#enterprise-container-updates for every service shepherd does not update (opt out with
+the label `diun.enable=false`).
 
 ## Operating
 

@@ -1,13 +1,14 @@
 # diun: posts to Slack when a watched image has a newer version in its registry.
 # Deploy from a manager node of the prod-bwsdocker01 swarm:
 #
-#   # once: the #devops incoming webhook as a docker secret (stays out of git)
-#   printf '%s' 'https://hooks.slack.com/services/T.../B.../xxx' | docker secret create slack_devops_webhook -
+#   # once: the #enterprise-container-updates incoming webhook as a docker secret (stays out of git)
+#   printf '%s' 'https://hooks.slack.com/services/T.../B.../xxx' | docker secret create slack_container_updates_webhook -
 #   docker stack deploy -c deploy/docker-swarm/diun-stack.yml diun
 #
 # Watches every swarm service: the host's shepherd only updates services that
-# opt in with shepherd.enable=true, so diun is how #devops hears about new
-# images for everything else. Opt a service out with the label diun.enable=false.
+# opt in with shepherd.enable=true, so diun is how #enterprise-container-updates
+# hears about new images for everything else. Services shepherd updates carry
+# the label diun.enable=false, since shepherd posts their updates itself.
 version: "3.8"
 
 services:
@@ -23,7 +24,7 @@ services:
       - DIUN_WATCH_FIRSTCHECKNOTIF=false
       - DIUN_PROVIDERS_SWARM=true
       - DIUN_PROVIDERS_SWARM_WATCHBYDEFAULT=true
-      - DIUN_NOTIF_SLACK_WEBHOOKURLFILE=/run/secrets/slack_devops_webhook
+      - DIUN_NOTIF_SLACK_WEBHOOKURLFILE=/run/secrets/slack_container_updates_webhook
       - DIUN_NOTIF_SLACK_RENDERFIELDS=true
       # No custom message template: swarm expands {{ }} in service env values
       # itself and rejects diun's template syntax.
@@ -31,7 +32,7 @@ services:
       - diun-data:/data
       - /var/run/docker.sock:/var/run/docker.sock
     secrets:
-      - slack_devops_webhook
+      - slack_container_updates_webhook
     deploy:
       replicas: 1
       placement:
@@ -43,7 +44,7 @@ services:
         diun.enable: "true"
 
 secrets:
-  slack_devops_webhook:
+  slack_container_updates_webhook:
     external: true
 
 volumes:

@@ -9,10 +9,10 @@
 # a release, pin the image to a version tag (e.g. :15.1.0).
 #
 # The host's shepherd only updates services labelled shepherd.enable=true, when
-# their image tag gets a new digest; diun alerts #devops about every other
-# service. Secrets live in Redis with persistence on a volume, so an automatic
-# restart costs at most ~1s of writes instead of wiping every secret, as it did
-# with memcached.
+# their image tag gets a new digest; diun alerts #enterprise-container-updates
+# about every other service. Secrets live in Redis with persistence on a
+# volume, so an automatic restart costs at most ~1s of writes instead of wiping
+# every secret, as it did with memcached.
 version: "3.8"
 
 services:
@@ -55,7 +55,7 @@ services:
           - node.hostname == prod-bwsdocker01
       labels:
         shepherd.enable: "true"
-        diun.enable: "true"
+        diun.enable: "false"
 
   yopass:
     image: quay.io/bywatersolutions/yopass:latest
@@ -100,7 +100,7 @@ services:
         traefik.http.routers.yopass.service: yopass
         traefik.http.services.yopass.loadbalancer.server.port: "3000"
         shepherd.enable: "true"
-        diun.enable: "true"
+        diun.enable: "false"
 
 volumes:
   redis-data: {}

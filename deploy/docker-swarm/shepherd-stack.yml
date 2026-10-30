@@ -6,7 +6,7 @@
 # shepherd_shepherd) that watches the whole swarm, so do not deploy this
 # there; it is for a host without one. Deploy from a manager node:
 #
-#   # the #devops webhook in Apprise form: https://hooks.slack.com/services/A/B/C -> slack://A/B/C
+#   # the #enterprise-container-updates webhook in Apprise form: https://hooks.slack.com/services/A/B/C -> slack://A/B/C
 #   export APPRISE_SLACK_URL='slack://T.../B.../xxx'
 #   docker stack deploy -c deploy/docker-swarm/shepherd-stack.yml shepherd
 version: "3.8"
