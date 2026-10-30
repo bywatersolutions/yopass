@@ -4,7 +4,7 @@ name: BWS - Sync upstream release
 # master is based on, replay our customization commits onto the new tag, push
 # the result as branch <version> and move master to it (force-with-lease), which
 # makes bws-build.yml publish :<version> and :latest. On a cherry-pick conflict:
-# push nothing, alert #devops and open a GitHub issue.
+# push nothing and open a GitHub issue.
 # Scheduled workflows only run from the default branch, so this must be on master.
 # All logic: .github/scripts/bws-sync-upstream.sh
 #
@@ -23,7 +23,7 @@ on:
         type: boolean
         default: false
       dry_run:
-        description: "Replay but push nothing; Slack message and issue get a [DRY RUN] prefix"
+        description: "Replay but push nothing; the issue gets a [DRY RUN] prefix"
         type: boolean
         default: false
 
@@ -69,12 +69,3 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: bash .github/scripts/bws-disable-upstream-workflows.sh
-
-      - name: Notify devops
-        if: always() && steps.sync.outputs.outcome != 'noop'
-        env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_DEVOPS_WEBHOOK }}
-          SLACK_COLOR: ${{ steps.sync.outputs.slack_color }}
-          SLACK_TITLE: ${{ steps.sync.outputs.slack_title }}
-          SLACK_TEXT: ${{ steps.sync.outputs.slack_text }}
-        run: bash .github/scripts/bws-slack.sh

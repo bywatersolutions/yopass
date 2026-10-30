@@ -16,12 +16,12 @@
 # Env inputs:
 #   TARGET_TAG  upstream tag to sync to (default: latest published release)
 #   FORCE       "true": ignore the "NEW is not newer than CUR" check
-#   DRY_RUN     "true": replay but never push; Slack/issue titles get "[DRY RUN] "
+#   DRY_RUN     "true": replay but never push; issue and summary titles get "[DRY RUN] "
 #   MASTER_REF  ref that plays the role of master (default origin/master); only
 #               honoured together with DRY_RUN=true, for local testing
 #
-# Writes to GITHUB_OUTPUT: outcome=noop|synced|conflict|error, slack_color,
-# slack_title, slack_text (consumed by the workflow's Slack step).
+# Writes outcome=noop|synced|conflict|error to GITHUB_OUTPUT and a title + text
+# to the job summary.
 # Exit status: 0 for noop/synced, 1 for conflict/error.
 set -euo pipefail
 
@@ -51,24 +51,16 @@ if [[ "${MASTER_REF}" != "origin/master" && "${DRY_RUN}" != "true" ]]; then
   exit 1
 fi
 
-# Slack outputs: start with "crashed" defaults, overwrite as we go, emit once on exit.
+# Outcome and summary: start with "crashed" defaults, overwrite as we go, emit once on exit.
 outcome="error"
-slack_color="danger"
-slack_title="${prefix}Yopass upstream sync failed unexpectedly"
-slack_text="Run: ${RUN_URL}"
+summary_title="${prefix}Yopass upstream sync failed unexpectedly"
+summary_text="Run: ${RUN_URL}"
 NEW=""
 
 # shellcheck disable=SC2329  # invoked by the EXIT trap
 cleanup_and_emit() {
-  {
-    echo "outcome=${outcome}"
-    echo "slack_color=${slack_color}"
-    echo "slack_title=${slack_title}"
-    echo "slack_text<<BWS_SLACK_EOF"
-    echo "${slack_text}"
-    echo "BWS_SLACK_EOF"
-  } >> "${GITHUB_OUTPUT}"
-  printf '## %s\n\n%s\n' "${slack_title}" "${slack_text}" >> "${GITHUB_STEP_SUMMARY}"
+  echo "outcome=${outcome}" >> "${GITHUB_OUTPUT}"
+  printf '## %s\n\n%s\n' "${summary_title}" "${summary_text}" >> "${GITHUB_STEP_SUMMARY}"
   cd "${REPO_DIR}"
   git worktree remove --force "${WORKTREE}" 2>/dev/null || true
   if [[ -n "${LOCAL_BRANCH}" ]]; then git branch -D "${LOCAL_BRANCH}" >/dev/null 2>&1 || true; fi
@@ -78,7 +70,7 @@ trap cleanup_and_emit EXIT
 log() { printf '%s\n' "$*" >&2; }
 die() {
   log "ERROR: $*"
-  slack_text="$*"$'\n'"Run: ${RUN_URL}"
+  summary_text="$*"$'\n'"Run: ${RUN_URL}"
   exit 1
 }
 describe_commits() { local c; for c in "$@"; do git log -1 --format='%h %s' "${c}"; done; }
@@ -121,7 +113,7 @@ if git ls-remote --exit-code --heads origin "refs/heads/${NEW}" >/dev/null 2>&1;
     outcome="noop"
     exit 0
   else
-    slack_title="${prefix}Yopass upstream sync needs a human: branch ${NEW} exists but master is still on ${CUR}"
+    summary_title="${prefix}Yopass upstream sync needs a human: branch ${NEW} exists but master is still on ${CUR}"
     die "Branch ${FORK_URL}/tree/${NEW} exists but master is based on ${CUR}. Either move master by hand (git push --force-with-lease=master:${MASTER_SHA} <fork> refs/heads/${NEW}:refs/heads/master) or delete the branch so the sync can retry."
   fi
 fi
@@ -243,9 +235,8 @@ EOF
   fi
 
   outcome="conflict"
-  slack_color="danger"
-  slack_title="${prefix}Yopass ${NEW} is available but could NOT be synced automatically"
-  slack_text="Cherry-pick conflict at ${failed:0:7} \"${subject}\" while replaying ${#COMMITS[@]} commit(s) from ${CUR} onto ${NEW}.
+  summary_title="${prefix}Yopass ${NEW} is available but could NOT be synced automatically"
+  summary_text="Cherry-pick conflict at ${failed:0:7} \"${subject}\" while replaying ${#COMMITS[@]} commit(s) from ${CUR} onto ${NEW}.
 Conflicting files: $(printf '%s' "${conflict_files}" | tr '\n' ' ')
 Nothing was pushed; production stays on ${CUR}.
 Issue: ${issue_url}
@@ -270,9 +261,8 @@ else
 fi
 
 outcome="synced"
-slack_color="good"
-slack_title="${prefix}Yopass ${NEW} is available and was synced automatically"
-slack_text="${action}
+summary_title="${prefix}Yopass ${NEW} is available and was synced automatically"
+summary_text="${action}
 Replayed ${#applied[@]} customization commit(s) onto upstream ${NEW}${skipped_note}:
 ${applied_list}
 Builds: ${FORK_URL}/actions/workflows/bws-build.yml -> ${IMAGE}:${NEW} and :latest (production auto-updates from :latest)

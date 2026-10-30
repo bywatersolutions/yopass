@@ -41,11 +41,10 @@ host loss.
    (`mirror.gcr.io/library/redis:8.10-alpine`); a restart is safe because Redis reloads its
    data from the volume. Only services labelled `shepherd.enable=true` are updated.
 
-Slack messages along the way: the sync result (synced, or conflict with a GitHub issue)
-and the master build result in #devops, and shepherd's "service updated / update failed"
-in #enterprise-container-updates. diun posts "updated in registry" to
-#enterprise-container-updates for every service shepherd does not update (opt out with
-the label `diun.enable=false`).
+A sync conflict opens a GitHub issue; the sync and build results are in each run's job
+summary. Shepherd posts "service updated / update failed" to #enterprise-container-updates,
+and diun posts "updated in registry" there for every service shepherd does not update (opt
+out with the label `diun.enable=false`).
 
 ## Operating
 

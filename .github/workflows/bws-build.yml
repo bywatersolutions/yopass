@@ -118,16 +118,3 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
           provenance: false
-
-      # Failures always; successes only for master (= :latest moved, prod will update).
-      - name: Notify devops
-        if: failure() || (success() && github.ref == 'refs/heads/master')
-        env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_DEVOPS_WEBHOOK }}
-          SLACK_COLOR: ${{ job.status == 'success' && 'good' || 'danger' }}
-          SLACK_TITLE: "Yopass image build ${{ job.status }}: ${{ github.ref_name }}"
-          SLACK_TEXT: |-
-            Upstream ${{ steps.version.outputs.version }}, commit ${{ steps.version.outputs.short_sha }}
-            Tags: ${{ steps.version.outputs.tags }}
-            Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
-        run: bash .github/scripts/bws-slack.sh
